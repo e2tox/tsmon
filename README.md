@@ -2,6 +2,10 @@
 
 `tsmon` is a tool that helps develop typescript based applications by automatically transpile and restarting the process when file changes are detected.
 
+## Why?
+
+It solving problems like this https://github.com/whitecolor/ts-node-dev/issues/57
+
 ## Installation
 
 ```bash
