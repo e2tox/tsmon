@@ -16,7 +16,7 @@ tsmon src/bin/standalone.ts
 
 ## Access Source Code
 
-This is a (Source-available Software)[https://en.wikipedia.org/wiki/Source-available_software]. But you still can get the transpiled js file from [unpkg.com](https://unpkg.com/tsmon@0.2.1/bin/standalone). The typescript source code is only available to our commercial subscription users.
+This is a [Source-available Software](https://en.wikipedia.org/wiki/Source-available_software). But you still can get the transpiled js file from [unpkg.com](https://unpkg.com/tsmon@0.2.1/bin/standalone). The typescript source code is only available to our commercial subscription users.
 
 ## License
 
