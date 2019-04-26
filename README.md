@@ -11,18 +11,46 @@ npm i -g tsmon
 ## Usage
 
 ```bash
-tsmon src/bin/standalone.ts
+tsmon [node arguments] your-app.ts [arguments...]
+```
+
+## Examples
+
+Example 1. Just run the index.ts
+
+```bash
+tsmon index.ts
+```
+
+Example 2. You want pass some parameter to your app
+
+```bash
+tsmon index.ts hello typescript 2019
+```
+
+Example 3. You want debugging the process
+
+```bash
+tsmon --inspect index.ts
+```
+
+Example 4. You want pass some parameter to your code and debug
+
+```bash
+tsmon --inspect index.ts hello world
 ```
 
 ## Roadmap
 - [x] Incremental type check
-- [x] Incremental transpile 
+- [x] Incremental transpile
 - [x] Automatically reload on .ts / tsconfig.json changes
 - [x] Gracefully shutdown running process
+- [x] Support node arguments
+- [x] Support additional command line arguments
 - [x] Manual reload with 'rs' command
-- [ ] Monitoring additonal directories other than just the source code
-- [ ] Server mode - turn off all visualise animations and integrated with systemd
-- [ ] Add support to deno runtime
+- [ ] Monitoring additional directories other than code files
+- [ ] Server mode - turn off all visual effects and integrated with systemd
+- [ ] Add option to use [deno](https://github.com/denoland/deno) runtime
 
 ## Access Source Code
 
