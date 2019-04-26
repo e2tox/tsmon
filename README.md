@@ -14,6 +14,10 @@ npm i -g tsmon
 tsmon src/bin/standalone.ts
 ```
 
+## Access Source Code
+
+The transpiled js file can be found [here](https://unpkg.com/tsmon@0.2.1/bin/standalone). The source code is written in TypeScript and it only available to our commercial subscription users.
+
 ## License
 
 Copyright 2019 Ling Zhang
