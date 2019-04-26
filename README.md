@@ -14,6 +14,16 @@ npm i -g tsmon
 tsmon src/bin/standalone.ts
 ```
 
+## Roadmap
+- [x] Incremental type check
+- [x] Incremental transpile 
+- [x] Automatically reload on .ts / tsconfig.json changes
+- [x] Gracefully shutdown running process
+- [x] Manual reload with 'rs' command
+- [ ] Monitoring additonal directories other than just the source code
+- [ ] Server mode - turn off all visualise animations and auto restart after crash
+- [ ] Add support to deno runtime
+
 ## Access Source Code
 
 This is a [Source-available Software](https://en.wikipedia.org/wiki/Source-available_software). But you still can get the transpiled js file from [unpkg.com](https://unpkg.com/tsmon@0.2.1/bin/standalone). The typescript source code is only available to our commercial subscription users.
