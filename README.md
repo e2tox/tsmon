@@ -16,25 +16,25 @@ tsmon [node arguments] your-app.ts [arguments...]
 
 ## Examples
 
-Example 1. Just run the index.ts
+1. Just run the index.ts
 
 ```bash
 tsmon index.ts
 ```
 
-Example 2. You want pass some parameter to your app
+2. You want pass some parameter to your app
 
 ```bash
 tsmon index.ts hello typescript 2019
 ```
 
-Example 3. You want debugging the process
+3. You want debugging the process
 
 ```bash
 tsmon --inspect index.ts
 ```
 
-Example 4. You want pass some parameter to your code and debug
+4. You want pass some parameter to your code and debug
 
 ```bash
 tsmon --inspect index.ts hello world
