@@ -21,7 +21,7 @@ tsmon src/bin/standalone.ts
 - [x] Gracefully shutdown running process
 - [x] Manual reload with 'rs' command
 - [ ] Monitoring additonal directories other than just the source code
-- [ ] Server mode - turn off all visualise animations and auto restart after crash
+- [ ] Server mode - turn off all visualise animations and integrated with systemd
 - [ ] Add support to deno runtime
 
 ## Access Source Code
