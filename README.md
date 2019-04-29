@@ -14,6 +14,12 @@ npm i -g tsmon
 tsmon [node arguments] your-app.ts [arguments...]
 ```
 
+## How fast?
+
+Reload typescript project with 456 ts files only took 1 sec.
+
+![Super fast reload](https://raw.githubusercontent.com/agentframework/tsmon/master/reload-time.png)
+
 ## Examples
 
 1. Just run the index.ts
@@ -48,6 +54,7 @@ tsmon --inspect index.ts hello world
 - [x] Support node arguments
 - [x] Support additional command line arguments
 - [x] Manual reload with 'rs' command
+- [x] Output changed file name
 - [ ] Monitoring additional directories other than code files
 - [ ] Server mode - turn off all visual effects and integrated with systemd
 - [ ] Add option to use [deno](https://github.com/denoland/deno) runtime
