@@ -46,6 +46,18 @@ tsmon --inspect index.ts
 tsmon --inspect index.ts hello world
 ```
 
+5. You want watch additional directory `conf`
+
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    ...
+  },
+  "watch": ["conf"]
+}
+```
+
 ## Roadmap
 - [x] Incremental type check
 - [x] Incremental transpile
@@ -56,6 +68,7 @@ tsmon --inspect index.ts hello world
 - [x] Manual reload with 'rs' command
 - [x] Output changed file name
 - [x] Monitoring additional directories other than code files. ("watch":string[] in tsconfig.json)
+- [ ] Check updates
 - [ ] Server mode - turn off all visual effects and integrated with systemd
 - [ ] Add option to use [deno](https://github.com/denoland/deno) runtime
 
