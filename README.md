@@ -55,7 +55,7 @@ tsmon --inspect index.ts hello world
 - [x] Support additional command line arguments
 - [x] Manual reload with 'rs' command
 - [x] Output changed file name
-- [ ] Monitoring additional directories other than code files
+- [x] Monitoring additional directories other than code files. ("watch":string[] in tsconfig.json)
 - [ ] Server mode - turn off all visual effects and integrated with systemd
 - [ ] Add option to use [deno](https://github.com/denoland/deno) runtime
 
