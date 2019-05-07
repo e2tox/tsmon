@@ -1,5 +1,7 @@
 # tsmon
 
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://unpkg.com/tsmon@0.4.2/LICENSE)
+
 `tsmon` is a tool that helps develop typescript based applications by automatically transpile and restarting the process when file changes are detected.
 
 ## Installation
@@ -49,7 +51,6 @@ tsmon --inspect index.ts hello world
 5. You want watch additional directory `conf`
 
 ```json
-// tsconfig.json
 {
   "compilerOptions": {
     ...
@@ -68,7 +69,7 @@ tsmon --inspect index.ts hello world
 - [x] Manual reload with 'rs' command
 - [x] Output changed file name
 - [x] Monitoring additional directories other than code files. ("watch":string[] in tsconfig.json)
-- [ ] Check updates
+- [x] License under [Anti 996](https://unpkg.com/tsmon@0.4.2/LICENSE)
 - [ ] Server mode - turn off all visual effects and integrated with systemd
 - [ ] Add option to use [deno](https://github.com/denoland/deno) runtime
 
@@ -80,11 +81,11 @@ This is a [Source-available Software](https://en.wikipedia.org/wiki/Source-avail
 
 Copyright 2019 Ling Zhang
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the "Anti 996", License Version 1.0 (Draft) (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://unpkg.com/tsmon@0.4.2/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
