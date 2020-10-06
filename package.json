@@ -1,27 +1,16 @@
 {
   "name": "tsmon",
-  "version": "0.3.9",
-  "private": true,
+  "version": "0.7.1",
   "engines": {
     "node": ">=8.5.0",
-    "typescript": ">=2 <4"
+    "typescript": ">=2 <=4"
+  },
+  "bin": {
+    "tsmon": "bin/tsmon"
   },
   "description": "Incremental type check, transpile and reload for TypeScript, automatically",
-  "bin": {
-    "tsmon": "bin/standalone"
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true
-  },
   "author": "Ling Zhang",
-  "files": [
-    "bin",
-    "lib",
-    "LICENSE",
-    "NOTICE",
-    "README.md"
-  ],
+  "license": "Anti 996",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/agentframework/tsmon.git"
@@ -31,15 +20,20 @@
     "watch",
     "reload"
   ],
+  "files": [
+    "bin",
+    "lib",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
   "dependencies": {
-    "agentframework": "^1.0.0",
-    "chalk": "^2.4.2",
-    "ora": "^3.4.0",
-    "semver": "^5.6.0",
-    "typescript": "^3.4.5"
-  },
-  "devDependencies": {
-    "@types/node": "~8",
-    "@types/semver": "~5"
+    "agentframework": "1.0.0",
+    "chalk": "2.4.2",
+    "ora": "4.0.3",
+    "semver": "6.3.0",
+    "source-map": "0.6.1",
+    "tslib": "1.10.0",
+    "typescript": "3.9.7"
   }
 }
