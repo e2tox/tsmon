@@ -1,4 +1,4 @@
-/.idea/
-/node_modules/
-/release/
-/coverage/
+.idea/
+node_modules/
+release/
+coverage/
