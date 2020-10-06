@@ -26,47 +26,48 @@ Reload typescript project with 456 ts files only took 1 sec.
 
 1. Just run the index.ts
 
-  ```bash
-  tsmon index.ts
-  ```
+```bash
+tsmon index.ts
+```
 
 2. You want pass some parameter to your app
 
-  ```bash
-  tsmon index.ts hello typescript 2019
-  ```
+```bash
+tsmon index.ts hello typescript 2019
+```
 
 3. You want debugging the process
 
-  ```bash
-  tsmon --inspect index.ts
-  ```
+```bash
+tsmon --inspect index.ts
+```
 
 4. You want pass some parameter to your code and debug
 
-  ```bash
-  tsmon --inspect index.ts hello world
-  ```
+```bash
+tsmon --inspect index.ts hello world
+```
 
 5. You want ignore type check errors
 
-  ```bash
-  tsmon --ignore-error index.ts
-  ```
+```bash
+tsmon --ignore-error index.ts
+```
 
 6. You want watch additional directory `conf`
 
-  ```json
-  {
-    "compilerOptions": {
-      ...
-    },
-    "watch": ["conf"]
-  }
-  ```
+```json
+{
+  "compilerOptions": {
+    ...
+  },
+  "watch": ["conf"]
+}
+```
 
-## Open Source Version
-- [x] Zero configuration
+## Free version
+
+- [x] Run .ts file with zero configuration
 - [x] Incremental type check
 - [x] Incremental transpile
 - [x] Automatically reload on .ts / tsconfig.json changes
@@ -81,11 +82,14 @@ Reload typescript project with 456 ts files only took 1 sec.
 - [x] Support source map
 - [x] Add --ignore-error option to ignore type errors
 
-## Enterprise Version
+## Subscription version
+
+- [ ] Build `.ts` file and output single `.d.ts`, `.js` or `.ts` file
+- [ ] Seamless integrate with AgentFramework
 - [ ] Support deno runtime
-- [ ] High performance transpiler build on top of esbuild
-- [ ] Server mode - turn off all visual effects and integrated with systemd
-- [ ] Auto pull and restart when remote repository updates
+- [ ] High performance transpiler customized on top of esbuild
+- [ ] Server mode - no animation and integrated with systemd
+- [ ] Auto update and restart when remote repository changes
 
 ## License
 
