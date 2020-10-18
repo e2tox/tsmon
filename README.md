@@ -82,7 +82,7 @@ tsmon --ignore-error index.ts
 - [x] Support source map
 - [x] Add --ignore-error option to ignore type errors
 
-## Subscription version
+## Professional version
 
 - [ ] Build `.ts` file and output single `.d.ts`, `.js` or `.ts` file
 - [ ] Seamless integrate with AgentFramework
