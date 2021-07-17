@@ -1,6 +1,6 @@
 # tsmon
 
-[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://unpkg.com/tsmon@0.7.2/LICENSE)
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://unpkg.com/tsmon@0.7.1/LICENSE)
 
 `tsmon` is a tool that helps develop typescript based applications by automatically transpile and restarting the process when file changes are detected.
 
@@ -65,7 +65,7 @@ tsmon --ignore-error index.ts
 }
 ```
 
-## Free version
+## Feature
 
 - [x] Run .ts file with zero configuration
 - [x] Incremental type check
@@ -77,19 +77,10 @@ tsmon --ignore-error index.ts
 - [x] Manual reload with 'rs' command
 - [x] Output changed file name
 - [x] Monitoring additional directories other than code files. ("watch":string[] in tsconfig.json)
-- [x] License under [Anti 996](https://unpkg.com/tsmon@0.7.2/LICENSE)
+- [x] License under [Anti 996](https://unpkg.com/tsmon@0.8.0/LICENSE)
 - [x] Support path alias in tsconfig.json
 - [x] Support source map
 - [x] Add --ignore-error option to ignore type errors
-
-## Professional version
-
-- [ ] Build `.ts` file and output single `.d.ts`, `.js` or `.ts` file
-- [ ] Seamless integrate with AgentFramework
-- [ ] Support deno runtime
-- [ ] High performance transpiler customized on top of esbuild
-- [ ] Server mode - no animation and integrated with systemd
-- [ ] Auto update and restart when remote repository changes
 
 ## License
 
@@ -99,7 +90,7 @@ Licensed under the "Anti 996", License Version 1.0 (Draft) (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    https://unpkg.com/tsmon@0.7.2/LICENSE
+    https://unpkg.com/tsmon@0.8.0/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

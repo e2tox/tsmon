@@ -1,6 +1,6 @@
 {
   "name": "tsmon",
-  "version": "0.7.3",
+  "version": "0.8.1",
   "engines": {
     "node": ">=8.5.0",
     "typescript": ">=2 <=4"
@@ -25,15 +25,14 @@
     "lib",
     "LICENSE",
     "NOTICE",
-    "README.md"
+    "README.md",
+    "conf",
+    "yarn.lock"
   ],
   "dependencies": {
-    "agentframework": "1.0.0",
     "chalk": "2.4.2",
     "ora": "4.0.3",
     "semver": "6.3.0",
-    "source-map": "0.6.1",
-    "tslib": "1.10.0",
-    "typescript": "3.9.7"
+    "source-map": "0.6.1"
   }
 }

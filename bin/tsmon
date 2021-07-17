@@ -1,593 +1,144 @@
 #!/usr/bin/env node
-const e = require('path'),
-  t = require('fs'),
-  i = require('semver'),
-  s = (function _interopDefault(e) {
-    return e && 'object' == typeof e && 'default' in e ? e.default : e;
-  })(require('chalk')),
-  r = require('typescript'),
-  n = require('child_process'),
-  o = require('events');
-function GetFileStats(e) {
-  if (t.existsSync(e)) {
-    const i = t.statSync(e);
-    if (i.isFile()) return (i.path = e), i;
-  }
-}
-function FindFileUp(t, i) {
-  if (!e.isAbsolute(t)) return;
-  let s = t + e.sep + 1102;
-  do {
-    s = e.dirname(s);
-    const t = GetFileStats(e.join(s, i));
-    if (t) return t;
-  } while (s.length > 1);
-}
-const a = new Map();
-class PackageFiles {
-  static ImportFromFile(r) {
-    try {
-      const n = t.readFileSync(r, {
-          encoding: 'utf8'
-        }),
-        o = JSON.parse(n);
-      for (const t of ['main', 'typings', 'module'])
-        o[t] && (e.isAbsolute(o[t]) || (o[t] = e.resolve(e.dirname(r), o[t])));
-      if (
-        (o.engines &&
-          o.engines.node &&
-          !i.satisfies(process.version, o.engines.node) &&
-          (console.log(
-            s.red(`You are using Node ${process.version}, but ${o.name}@${o.version} requires Node ${o.engines.node}.`)
-          ),
-          process.exit(1)),
-        o.engines && o.engines.typescript)
-      ) {
-        const e = a.get('typescript');
-        if (!e) return console.log(s.red('ERROR: No typescript found. exiting...')), process.exit(1);
-        i.satisfies(e.version, o.engines.typescript) ||
-          (console.log(
-            s.red(
-              `You are using typescript ${e.version}, but ${o.name}@${o.version} requires typescript ${o.engines.typescript}.`
-            )
-          ),
-          process.exit(1));
-      }
-      return a.set(o.name, o), o;
-    } catch (e) {
-      return;
-    }
-  }
-  static Get(e) {
-    return a.get(e);
-  }
-}
-class PackageFileResolver {
-  static FromPath(e) {
-    const t = FindFileUp(e, 'package.json');
-    if (t) return PackageFiles.ImportFromFile(t.path);
-  }
-  static FromName(t) {
-    const i = FindFileUp(process.cwd(), e.join('node_modules', t, 'package.json'));
-    if (i) return PackageFiles.ImportFromFile(i.path);
-    const s = require.resolve.paths(t);
-    try {
-      const e = require.resolve(t);
-      if (e) {
-        const t = PackageFileResolver.FromPath(e);
-        if (t) return t;
-      }
-    } catch (e) {}
-    if (Array.isArray(s))
-      for (const i of s) {
-        const s = GetFileStats(e.join(i, t, 'package.json'));
-        if (s) return PackageFiles.ImportFromFile(s.path);
-      }
-  }
-}
-var c;
-!(function(e) {
-  (e[(e.New = 0)] = 'New'),
-    (e[(e.Starting = 1)] = 'Starting'),
-    (e[(e.Started = 2)] = 'Started'),
-    (e[(e.Stopping = 3)] = 'Stopping'),
-    (e[(e.Stopped = 4)] = 'Stopped');
-})(c || (c = {}));
-class Thread extends o.EventEmitter {
-  constructor(e, t, i) {
-    super(), (this.state = c.New);
-    const s = (this.handler = n.fork(e, t, i)),
-      childProcessMessageCallback = e => {
-        e
-          ? 'requiring' === e.type
-            ? ((this.state = c.Starting), this.emit('starting'))
-            : 'required' === e.type &&
-              ((this.state = c.Started),
-              this.emit('started'),
-              this.handler.removeListener('message', childProcessMessageCallback))
-          : console.log('Invalid user application communication');
-      };
-    s.on('message', childProcessMessageCallback),
-      s.once('error', function() {
-        console.log('User application error', arguments);
-      }),
-      s.once('exit', e => {
-        this.state !== c.Stopped && ((this.initialized = !0), (this.state = c.Stopped), this.emit('stopped', e));
-      }),
-      s.unref();
-  }
-  get pid() {
-    return this.handler.pid;
-  }
-  send(e) {
-    this.handler.send(e, function(t) {
-      e && 'report' !== e.type && t && console.log('Unable to communicate with user application', t, e);
-    });
-  }
-  cache(e) {
-    (this.initialized = !0), this.send({ type: 'cache', value: e });
-  }
-  require(e) {
-    (this.initialized = !0), this.send({ type: 'require', value: e });
-  }
-  report(e, t) {
-    this.send({ type: 'report', value: { method: e, options: t } });
-  }
-  kill(e) {
-    return (this.initialized = !0), (this.state = c.Stopping), this.emit('stopping', e), this.handler.kill(e), !0;
-  }
-  stop(e = 'SIGTERM') {
-    (this.initialized = !0), (this.state = c.Stopping), this.emit('stopping', e), this.handler.kill(e);
-  }
-}
-class TypeScriptProgram {
-  constructor(e, t, i, s, n, o) {
-    (this.runtimeFile = e),
-      (this.reportFile = t),
-      (this.entryFile = i),
-      (this.configPath = s),
-      (this.execArgv = n),
-      (this.entryArgv = o),
-      (this.options = { ignoreErrors: !1 }),
-      (this.status = ''),
-      (this.commands = []);
-    const a = n.indexOf('--ignore-error');
-    if (
-      (a > -1 && ((this.options.ignoreErrors = !0), n.splice(a, 1)),
-      (this.cacheFile = this.entryFile + '.tsmon'),
-      (this.reporter = this.createReporter()),
-      (this.thread = this.create()),
-      (this.files = new Map()),
-      this.report('info', '(1/3) Using: ' + this.configPath),
-      !r.findConfigFile(__dirname, r.sys.fileExists, 'package.json'))
-    )
-      throw new Error('Could not find "package.json"');
-    (this.sys = Object.assign({}, r.sys, {
-      writeFile: (e, t) => {
-        const i = e.slice(0, e.length - 3) + '.ts';
-        this.files.set(i, t), this.report('start', '(3/3) Building...' + i);
-      }
-    })),
-      this.setupRestartCommand();
-  }
-  setupRestartCommand() {
-    process.stdin.setEncoding('utf8'),
-      process.stdin.on('readable', () => {
-        let e;
-        for (; null != (e = process.stdin.read()); ) {
-          const t = ('' + e).trim();
-          'rs' === t
-            ? this.start()
-            : 'kill' === t
-            ? this.thread && this.thread.initialized
-              ? this.kill()
-              : console.log(s.yellow('[ Unregistered ]'), s.white('tsmon: no process to kill'))
-            : 'debug' === t &&
-              (this.thread && this.thread.initialized
-                ? this.thread.kill('SIGUSR1')
-                : console.log(s.yellow('[ Unregistered ]'), s.white('tsmon: no process to debug')));
-        }
-      }),
-      process.stdin.on('end', () => {
-        process.stdout.write('Console input stream end');
-      });
-  }
-  createReporter() {
-    if (this.reportFile)
-      return new Thread(this.reportFile, this.entryArgv, {
-        execArgv: this.execArgv,
-        cwd: process.cwd(),
-        env: process.env
-      });
-  }
-  create() {
-    const e = new Thread(this.runtimeFile, this.entryArgv, {
-        execArgv: this.execArgv,
-        cwd: process.cwd(),
-        env: process.env
-      }),
-      t = e.pid;
-    return (
-      e.on('started', () => {
-        setTimeout(() => {
-          console.log(
-            s.yellow('[ Unregistered ]'),
-            s.white(`tsmon is happily serving ${this.files.size} files, enter "rs" or "kill ${t}" to restart`)
-          );
-        }, 5),
-          (this.status = ''),
-          this.next();
-      }),
-      e.on('stopping', () => {}),
-      e.on('stopped', e => {
-        'kill' === this.status
-          ? (console.log(s.yellow('[ Unregistered ]'), s.white(`tsmon: process ${t} killed`)),
-            this.commands.push('start'))
-          : 'stop' !== this.status
-          ? (null != e
-              ? console.log(
-                  s.yellow('[ Unregistered ]'),
-                  s.white(`tsmon: process ${t} exit code ${e}, enter 'rs' to restart`)
-                )
-              : console.log(s.yellow('[ Unregistered ]'), s.white(`tsmon: process ${t} exited, enter 'rs' to restart`)),
-            (15 !== e && null !== e) || this.commands.push('start'))
-          : console.log(s.yellow('[ Unregistered ]'), s.white(`tsmon: process ${t} exit code ${e}`)),
-          (this.thread = void 0),
-          (this.status = ''),
-          this.next();
-      }),
-      e
-    );
-  }
-  report(e, t) {
-    this.reporter && this.reporter.report(e, t);
-  }
-  start() {
-    this.thread && this.commands.push('stop'), this.commands.push('start'), this.status || this.next();
-  }
-  stop() {
-    this.thread && this.commands.push('stop'), this.status || this.next();
-  }
-  kill() {
-    this.thread && this.commands.push('kill'), this.status || this.next();
-  }
-  next() {
-    if (this.status) throw new Error('InvalidStateForNext');
-    if (this.commands.length) {
-      const e = this.commands.shift();
-      'start' === e ? this.starting() : 'stop' === e ? this.stopping() : 'kill' === e && this.killing();
-    }
-  }
-  starting() {
-    if (this.status) return;
-    if (this.thread && this.thread.initialized) return;
-    this.status = 'start';
-    const e = (this.thread = this.thread || this.create());
-    for (const t of this.files.entries()) e.cache(t);
-    e.require(this.entryFile);
-  }
-  stopping() {
-    this.status ||
-      (this.thread && this.thread.initialized ? ((this.status = 'stop'), this.thread.stop()) : this.next());
-  }
-  killing() {
-    this.status ||
-      (this.thread && this.thread.initialized ? ((this.status = 'kill'), this.thread.kill('SIGKILL')) : this.next());
-  }
-}
-function fileExistsSync(e) {
-  try {
-    return t.statSync(e).isFile();
-  } catch (e) {
-    return !1;
-  }
-}
-function readJsonFromDiskSync(e) {
-  if (t.existsSync(e)) return require(e);
-}
-function removeExtension(e) {
-  return e.substring(0, e.lastIndexOf('.')) || e;
-}
-function getPrefixLength(e) {
-  const t = e.indexOf('*');
-  return e.substr(0, t).length;
-}
-function getStrippedPath(t) {
-  return 'index' === t.type
-    ? e.dirname(t.path)
-    : 'file' === t.type
-    ? t.path
-    : 'extension' === t.type
-    ? removeExtension(t.path)
-    : 'package' === t.type
-    ? t.path
-    : exhaustiveTypeException(t.type);
-}
-function exhaustiveTypeException(e) {
-  throw new Error('Unknown type ' + e);
-}
-function matchStar(e, t) {
-  if (t.length < e.length) return;
-  if ('*' === e) return t;
-  const i = e.indexOf('*');
-  if (-1 === i) return;
-  const s = e.substring(0, i),
-    r = e.substring(i + 1);
-  return t.substr(0, i) === s && t.substr(t.length - r.length) === r ? t.substr(i, t.length - r.length) : void 0;
-}
-function createMatchPath(t, i, s = ['main'], r = !0) {
-  const n = (function getAbsoluteMappingEntries(t, i, s) {
-    const r = (function sortByLongestPrefix(e) {
-        return e.concat().sort((e, t) => getPrefixLength(t) - getPrefixLength(e));
-      })(Object.keys(i)),
-      n = [];
-    for (const s of r) n.push({ pattern: s, paths: i[s].map(i => e.join(t, i)) });
-    return (
-      !i['*'] &&
-        s &&
-        n.push({
-          pattern: '*',
-          paths: [t.replace(/\/$/, '') + '/*']
-        }),
-      n
-    );
-  })(t, i, r);
-  return (t, i, r, o) =>
-    (function matchFromAbsolutePaths(
-      t,
-      i,
-      s = readJsonFromDiskSync,
-      r = fileExistsSync,
-      n = Object.keys(require.extensions),
-      o = ['main']
-    ) {
-      const a = (function getPathsToTry(t, i, s) {
-        if (!i || !s || '.' === s[0] || s[0] === e.sep) return;
-        const r = [];
-        for (const n of i) {
-          const i = n.pattern === s ? '' : matchStar(n.pattern, s);
-          if (void 0 !== i)
-            for (const s of n.paths) {
-              const n = s.replace('*', i);
-              r.push({
-                type: 'file',
-                path: n
-              }),
-                r.push(...t.map(e => ({ type: 'extension', path: n + e }))),
-                r.push({ type: 'package', path: e.join(n, '/package.json') });
-              const o = e.join(n, '/index');
-              r.push(...t.map(e => ({ type: 'index', path: o + e })));
-            }
-        }
-        return 0 === r.length ? void 0 : r;
-      })(n, t, i);
-      if (a)
-        return (function findFirstExistingPath(e, t = readJsonFromDiskSync, i, s = ['main']) {
-          for (const r of e)
-            if ('file' === r.type || 'extension' === r.type || 'index' === r.type) {
-              if (i(r.path)) return getStrippedPath(r);
-            } else if ('package' === r.type) {
-              const e = t(r.path);
-              if (e) {
-                const t = findFirstExistingMainFieldMappedFile(e, s, r.path, i);
-                if (t) return removeExtension(t);
-              }
-            } else exhaustiveTypeException(r.type);
-        })(a, s, r, o);
-    })(n, t, i, r, o, s);
-}
-function findFirstExistingMainFieldMappedFile(t, i, s, r) {
-  for (let n = 0; n < i.length; n++) {
-    const o = t[i[n]];
-    if (o && 'string' == typeof o) {
-      const t = e.join(e.dirname(s), o);
-      if (r(t)) return t;
-    }
-  }
-}
-function PathAliasTransformerFactory(t) {
-  const i = t.getCompilerOptions(),
-    s = shouldAddCurrentWorkingDirectoryPath(i.baseUrl) ? e.join(process.cwd(), i.baseUrl || '.') : i.baseUrl || '.',
-    n = ['.ts', '.js', '.json', '.node'],
-    o = createMatchPath(s, i.paths || {});
-  return function(i) {
-    return (function visitSourceFile(t, i, s, n) {
-      return (function visitNodeAndChildren(o) {
-        return null == o
-          ? o
-          : ((o = (function visitNode(i) {
-              return r.isExportDeclaration(i) || r.isImportDeclaration(i)
-                ? (function visitImportExportNode(i) {
-                    if (
-                      !i.moduleSpecifier ||
-                      (function isImportExportSpecifierRelative(e) {
-                        return (
-                          !(!e.moduleSpecifier || !e.moduleSpecifier.getSourceFile()) &&
-                          isPathRelative(getModuleSpecifierValue(e.moduleSpecifier))
-                        );
-                      })(i)
-                    )
-                      return i;
-                    return (function relativizeImportExportNode(t, i) {
-                      if (!t.moduleSpecifier || !t.moduleSpecifier.getSourceFile()) return t;
-                      const o = getModuleSpecifierValue(t.moduleSpecifier),
-                        a = s(o, void 0, void 0, n);
-                      if (!a) return t;
-                      const c = r.getMutableClone(t),
-                        l = e.relative(i, a).replace(/\\/g, '/');
-                      return (c.moduleSpecifier = r.createLiteral(isPathRelative(l) ? l : './' + l)), c;
-                    })(i, e.dirname(t.fileName));
-                  })(i)
-                : i;
-            })(o)),
-            r.visitEachChild(o, e => visitNodeAndChildren(e), i));
-      })(t);
-      function getModuleSpecifierValue(e) {
-        return e.getText().substr(e.getLeadingTriviaWidth(), e.getWidth() - 2 * e.getLeadingTriviaWidth());
-      }
-      function isPathRelative(e) {
-        return e.startsWith('./') || e.startsWith('../');
-      }
-    })(i, t, o, n);
-  };
-}
-const shouldAddCurrentWorkingDirectoryPath = e => {
-  if (!e) return !0;
-  const t = '/' === e[0],
-    i = new RegExp('^[A-Z]:/').test(e);
-  return !(t || i);
-};
-class TypeScriptWatcher {
-  constructor(e) {
-    (this.agent = e),
-      (this.format = {
-        getCanonicalFileName: e => e,
-        getCurrentDirectory: r.sys.getCurrentDirectory,
-        getNewLine: () => r.sys.newLine
-      });
-  }
-  start() {
-    const i = r.createEmitAndSemanticDiagnosticsBuilderProgram;
-    let n = 0;
-    const o = r.createWatchCompilerHost(
-        this.agent.configPath,
-        {
-          noEmit: !1,
-          newLine: r.NewLineKind.LineFeed,
-          sourceMap: !1,
-          inlineSourceMap: !0,
-          incremental: !0,
-          declaration: !1,
-          declarationMap: !1,
-          tsBuildInfoFile: this.agent.cacheFile
-        },
-        this.agent.sys,
-        i,
-        e => {
-          n++, console.error('\r\n' + r.formatDiagnosticsWithColorAndContext([e], this.format));
-        },
-        e => {
-          if (
-            (6031 === e.code && console.log(), 6032 === e.code && this.agent.stop(), 6193 === e.code || 6194 === e.code)
-          ) {
-            let e = n;
-            if (((n = 0), e)) {
-              const t = e > 1 ? e + ' errors' : '1 error';
-              this.agent.options.ignoreErrors
-                ? (this.agent.report('info', '(3/3) Building...ignored ' + t),
-                  setTimeout(() => {
-                    this.agent.start();
-                  }, 5))
-                : (this.agent.report('info', '(3/3) Building...found ' + t),
-                  setTimeout(() => {
-                    console.log(
-                      s.yellow('[ Unregistered ]'),
-                      s.white("tsmon: modify source code or enter 'rs' to run")
-                    );
-                  }, 5));
-            } else
-              this.agent.report('info', '(3/3) Building...success'),
-                setTimeout(() => {
-                  this.agent.start();
-                }, 5);
-          }
-        }
-      ),
-      a = o.watchFile;
-    o.watchFile = (e, t, i) =>
-      a(e, (e, i) => (console.log(s.yellow('[ Unregistered ]'), s.yellow('tsmon: file changed: ' + e)), t(e, i)), i);
-    const c = o.createProgram;
-    (o.createProgram = (...e) => {
-      this.agent.report('start', '(2/3) Initializing...');
-      const t = Reflect.apply(c, o, e);
-      return this.agent.report('info', '(2/3) Initializing...done'), t;
-    }),
-      (o.useCaseSensitiveFileNames = () => !0);
-    const l = o.afterProgramCreate;
-    (o.afterProgramCreate = e => {
-      this.agent.report('start', '(3/3) Building...');
-      const t = e.getCompilerOptions();
-      if (t.baseUrl && t.paths && Object.keys(t.paths)) {
-        const t = {};
-        t.before = [PathAliasTransformerFactory];
-        const i = e.emit;
-        e.emit = function(s, r, n, o, a) {
-          if (a) {
-            const c = {};
-            return (
-              (c.before = (a.before || []).concat(t.before || [])),
-              (c.after = (a.after || []).concat(t.after || [])),
-              (c.afterDeclarations = (a.afterDeclarations || []).concat(t.afterDeclarations || [])),
-              Reflect.apply(i, e, [s, r, n, o, a])
-            );
-          }
-          return Reflect.apply(i, e, [s, r, n, o, t]);
-        };
-      }
-      l(e);
-    }),
-      (this.watcher = r.createWatchProgram(o));
-    const h = require(o.configFileName);
-    if (Array.isArray(h.watch) && r.sys.watchDirectory) {
-      const i = e.dirname(o.configFileName);
-      for (const r of h.watch) {
-        const n = e.join(i, r);
-        t.watch(n, (t, r) => {
-          if (r) {
-            const t = e.join(i, r);
-            console.log(s.yellow('[ Unregistered ]'), s.yellow('tsmon: watching folder changed: ' + t)),
-              this.agent.start();
-          }
-        });
-      }
-    }
-  }
-}
-!(function main() {
-  const i = PackageFileResolver.FromName('typescript');
-  if (!i) return;
-  const n = PackageFileResolver.FromPath(
-    (function CurrentFileName(e) {
-      const { stackTraceLimit: t } = Error;
-      Error.stackTraceLimit = e;
-      const i = { stack: '' };
-      Error.captureStackTrace(i), (Error.stackTraceLimit = t);
-      const s = i.stack.split('\n'),
-        r = s[s.length - 1],
-        n = r.indexOf('('),
-        o = r.lastIndexOf(')');
-      let a;
-      a = n > 0 && o > 0 ? r.slice(n + 1, o) : r.slice(r.indexOf('at') + 3);
-      const c = a.lastIndexOf(':'),
-        l = a.lastIndexOf(':', c - 1);
-      return a.slice(0, l);
-    })(2)
-  );
-  if (!n) return console.log(s.red('ERROR: No package.json found. exiting...')), process.exit(1);
-  const o = process.argv.findIndex(e => e.endsWith('.ts'));
-  if (-1 === o) return console.log(s.red('ERROR: No .ts file to run')), process.exit(1);
-  const a = process.argv[o],
-    c = o > 2 ? process.argv.slice(2, o) : [],
-    l = process.argv.length > o + 1 ? process.argv.slice(o + 1) : [];
-  let h;
-  if (((h = e.isAbsolute(a) ? a : e.resolve(process.cwd(), a)), !t.existsSync(h)))
-    return console.log(s.red(`ERROR: ${h} not exists`)), process.exit(1);
-  if (!t.statSync(h).isFile()) return console.log(s.red(`ERROR: ${h} is not a file`)), process.exit(1);
-  const p = class TSConfigResolver {
-    static FromPath(e) {
-      const t = FindFileUp(e, 'tsconfig.json');
-      if (t) return t.path;
-    }
-  }.FromPath(h);
-  if (!p) return console.log(s.red('ERROR: No tsconfig.json found')), process.exit(1);
-  const u = e.resolve(__dirname, '../lib/tsmon.js');
-  if (!r.sys.fileExists(u)) return console.log(s.red('ERROR: No typescript runtime found.')), process.exit(1);
-  let d = e.resolve(__dirname, '../lib/reporter.js');
-  r.sys.fileExists(d) || (d = void 0),
-    console.log(
-      s.yellow('[ Unregistered ]') +
-        s.white(` ${n.name} v${n.version}, typescript v${i.version}, node ${process.version}`)
-    );
-  const g = new TypeScriptProgram(u, d, h, p, c, l);
-  new TypeScriptWatcher(g).start();
-})();
+const e=require("path"),t=require("fs"),i=require("semver"),s=require("chalk"),r=require("child_process"),n=require("events")
+;function _interopDefaultLegacy(e){return e&&"object"==typeof e&&"default"in e?e:{default:e}}
+const o=_interopDefaultLegacy(e),a=_interopDefaultLegacy(s);function GetFileStats(e){if(t.existsSync(e)){
+const i=t.statSync(e);if(i.isFile())return i.path=e,i}}function FindFileUp(t,i){if(!e.isAbsolute(t))return
+;let s=t+e.sep+1102;do{s=e.dirname(s);const t=GetFileStats(e.join(s,i));if(t)return t}while(s.length>1)}const c=new Map
+;class PackageFileReader{static ImportFromFile(s){try{const r=t.readFileSync(s,{encoding:"utf8"}),n=JSON.parse(r)
+;n.path=s;for(const t of["main","typings","module"])n[t]&&(e.isAbsolute(n[t])||(n[t]=e.resolve(e.dirname(s),n[t])))
+;if(n.engines&&n.engines.node&&!i.satisfies(process.version,n.engines.node)&&(console.log(a.default.red(`You are using Node ${process.version}, but ${n.name}@${n.version} requires Node ${n.engines.node}.`)),
+process.exit(1)),n.engines&&n.engines.typescript){const e=c.get("typescript")
+;if(!e)return console.log(a.default.red("ERROR: No typescript found. exiting...")),process.exit(1)
+;i.satisfies(e.version,n.engines.typescript)||(console.log(a.default.red(`You are using typescript ${e.version}, but ${n.name}@${n.version} requires typescript ${n.engines.typescript}.`)),
+process.exit(1))}return c.set(n.name,n),n}catch(e){return}}static Get(e){return c.get(e)}}class PackageFileResolver{
+static FromPath(e){const t=FindFileUp(e,"package.json");if(t)return PackageFileReader.ImportFromFile(t.path)}
+static FromName(t,i){const s=FindFileUp(i,e.join("node_modules",t,"package.json"))
+;if(s)return PackageFileReader.ImportFromFile(s.path);const r=require.resolve.paths(t);try{const e=require.resolve(t)
+;if(e){const t=PackageFileResolver.FromPath(e);if(t)return t}}catch(e){}if(Array.isArray(r))for(const i of r){
+const s=GetFileStats(e.join(i,t,"package.json"));if(s)return PackageFileReader.ImportFromFile(s.path)}}}var l
+;!function(e){e[e.New=0]="New",e[e.Starting=1]="Starting",e[e.Started=2]="Started",e[e.Stopping=3]="Stopping",
+e[e.Stopped=4]="Stopped"}(l||(l={}));class Thread extends n.EventEmitter{constructor(e,t,i){super(),this.state=l.New
+;const s=this.handler=r.fork(e,t,i),childProcessMessageCallback=e=>{e?"requiring"===e.type?(this.state=l.Starting,
+this.emit("starting")):"required"===e.type&&(this.state=l.Started,this.emit("started"),
+this.handler.removeListener("message",childProcessMessageCallback)):console.log("Invalid user application communication")
+};s.on("message",childProcessMessageCallback),s.once("error",(function(){console.log("User application error",arguments)
+})),s.once("exit",(e=>{this.state!==l.Stopped&&(this.initialized=!0,this.state=l.Stopped,this.emit("stopped",e))})),
+s.unref()}get pid(){return this.handler.pid}send(e){this.handler.send(e,(function(t){
+e&&"report"!==e.type&&t&&console.log("Unable to communicate with user application",t,e)}))}cache(e){this.initialized=!0,
+this.send({type:"cache",value:e})}require(e){this.initialized=!0,this.send({type:"require",value:e})}report(e,t){
+this.send({type:"report",value:{method:e,options:t}})}kill(e){return this.initialized=!0,this.state=l.Stopping,
+this.emit("stopping",e),this.handler.kill(e),!0}stop(e="SIGTERM"){this.initialized=!0,this.state=l.Stopping,
+this.emit("stopping",e),this.handler.kill(e)}}class TypeScriptProgram{constructor(t,i,s,r,n,o,a){this.tsc=t,
+this.runtimeFile=i,this.reportFile=s,this.entryFile=r,this.configFile=n,this.execArgv=o,this.entryArgv=a,this.options={
+ignoreErrors:!1},this.commands=[],this.status="";const c=o.indexOf("--ignore-error")
+;if(c>-1&&(this.options.ignoreErrors=!0,o.splice(c,1)),this.configDir=e.dirname(n),
+this.cacheFile=this.entryFile+".tsmon",this.reporter=this.createReporter(),this.thread=this.create(),this.files=new Map,
+this.report("info","(1/3) Using: "+this.configFile),
+!this.tsc.findConfigFile(__dirname,this.tsc.sys.fileExists,"package.json"))throw new Error('Could not find "package.json"')
+;this.sys=Object.assign({},this.tsc.sys,{writeFile:(e,t)=>{const i=e.slice(0,e.length-3)+".ts";this.files.set(i,t),
+this.report("start","(3/3) Building..."+i)}}),this.setupRestartCommand()}setupRestartCommand(){
+process.stdin.setEncoding("utf8"),process.stdin.on("readable",(()=>{let e;for(;null!=(e=process.stdin.read());){
+const t=`${e}`.trim()
+;"rs"===t?this.start():"kill"===t?this.thread&&this.thread.initialized?this.kill():console.log(a.default.yellow("[ Unregistered ]"),a.default.white("tsmon: no process to kill")):"debug"===t&&(this.thread&&this.thread.initialized?this.thread.kill("SIGUSR1"):console.log(a.default.yellow("[ Unregistered ]"),a.default.white("tsmon: no process to debug")))
+}})),process.stdin.on("end",(()=>{process.stdout.write("Console input stream end")}))}createReporter(){
+if(this.reportFile)return new Thread(this.reportFile,this.entryArgv,{execArgv:this.execArgv,cwd:process.cwd(),
+env:process.env})}create(){const e=new Thread(this.runtimeFile,this.entryArgv,{execArgv:this.execArgv,cwd:process.cwd(),
+env:process.env}),t=e.pid;return e.on("started",(()=>{setTimeout((()=>{
+console.log(a.default.yellow("[ Unregistered ]"),a.default.white(`tsmon is happily serving ${this.files.size} files, enter "rs" or "kill ${t}" to restart`))
+}),5),this.status="",this.next()})),e.on("stopping",(()=>{})),e.on("stopped",(e=>{
+"kill"===this.status?(console.log(a.default.yellow("[ Unregistered ]"),a.default.white(`tsmon: process ${t} killed`)),
+this.commands.push("start")):"stop"!==this.status?(null!=e?console.log(a.default.yellow("[ Unregistered ]"),a.default.white(`tsmon: process ${t} exit code ${e}, enter 'rs' to restart`)):console.log(a.default.yellow("[ Unregistered ]"),a.default.white(`tsmon: process ${t} exited, enter 'rs' to restart`)),
+15!==e&&null!==e||this.commands.push("start")):console.log(a.default.yellow("[ Unregistered ]"),a.default.white(`tsmon: process ${t} exit code ${e}`)),
+this.thread=void 0,this.status="",this.next()})),e}report(e,t){this.reporter&&this.reporter.report(e,t)}start(){
+this.thread&&this.commands.push("stop"),this.commands.push("start"),this.status||this.next()}stop(){
+this.thread&&this.commands.push("stop"),this.status||this.next()}kill(){this.thread&&this.commands.push("kill"),
+this.status||this.next()}next(){if(this.status)throw new Error("InvalidStateForNext");if(this.commands.length){
+const e=this.commands.shift();"start"===e?this.starting():"stop"===e?this.stopping():"kill"===e&&this.killing()}}
+starting(){if(this.status)return;if(this.thread&&this.thread.initialized)return;this.status="start"
+;const e=this.thread=this.thread||this.create();for(const t of this.files.entries())e.cache(t);e.require(this.entryFile)
+}stopping(){this.status||(this.thread&&this.thread.initialized?(this.status="stop",this.thread.stop()):this.next())}
+killing(){this.status||(this.thread&&this.thread.initialized?(this.status="kill",
+this.thread.kill("SIGKILL")):this.next())}}function fileExistsSync(e){try{return t.statSync(e).isFile()}catch(e){
+return!1}}function readJsonFromDiskSync(e){if(t.existsSync(e))return require(e)}function removeExtension(e){
+return e.substring(0,e.lastIndexOf("."))||e}function getPrefixLength(e){const t=e.indexOf("*")
+;return e.substr(0,t).length}function getStrippedPath(t){
+return"index"===t.type?e.dirname(t.path):"file"===t.type?t.path:"extension"===t.type?removeExtension(t.path):"package"===t.type?t.path:exhaustiveTypeException(t.type)
+}function exhaustiveTypeException(e){throw new Error(`Unknown type ${e}`)}function matchStar(e,t){
+if(t.length<e.length)return;if("*"===e)return t;const i=e.indexOf("*");if(-1===i)return
+;const s=e.substring(0,i),r=e.substring(i+1)
+;return t.substr(0,i)===s&&t.substr(t.length-r.length)===r?t.substr(i,t.length-r.length):void 0}
+function createMatchPath(t,i,s=["main"],r=!0){const n=function getAbsoluteMappingEntries(t,i,s){
+const r=function sortByLongestPrefix(e){return e.concat().sort(((e,t)=>getPrefixLength(t)-getPrefixLength(e)))
+}(Object.keys(i)),n=[];for(const s of r)n.push({pattern:s,paths:i[s].map((i=>e.join(t,i)))});return!i["*"]&&s&&n.push({
+pattern:"*",paths:[`${t.replace(/\/$/,"")}/*`]}),n}(t,i,r)
+;return(t,i,r,o)=>function matchFromAbsolutePaths(t,i,s=readJsonFromDiskSync,r=fileExistsSync,n=Object.keys(require.extensions),o=["main"]){
+const a=function getPathsToTry(t,i,s){if(!i||!s||"."===s[0]||s[0]===e.sep)return;const r=[];for(const n of i){
+const i=n.pattern===s?"":matchStar(n.pattern,s);if(void 0!==i)for(const s of n.paths){const n=s.replace("*",i);r.push({
+type:"file",path:n}),r.push(...t.map((e=>({type:"extension",path:n+e})))),r.push({type:"package",
+path:e.join(n,"package.json")});const o=e.join(n,"index");r.push(...t.map((e=>({type:"index",path:o+e}))))}}
+return 0===r.length?void 0:r}(n,t,i);if(a)return function findFirstExistingPath(e,t=readJsonFromDiskSync,i,s=["main"]){
+for(const r of e)if("file"===r.type||"extension"===r.type||"index"===r.type){if(i(r.path))return getStrippedPath(r)
+}else if("package"===r.type){const e=t(r.path);if(e){const t=findFirstExistingMainFieldMappedFile(e,s,r.path,i)
+;if(t)return removeExtension(t)}}else exhaustiveTypeException(r.type)}(a,s,r,o)}(n,t,i,r,o,s)}
+function findFirstExistingMainFieldMappedFile(t,i,s,r){for(let n=0;n<i.length;n++){const o=t[i[n]]
+;if(o&&"string"==typeof o){const t=e.join(e.dirname(s),o);if(r(t))return t}}}function PathAliasTransformer(e,t){
+return i=>{
+const s=i.getCompilerOptions(),r=shouldAddCurrentWorkingDirectoryPath(s.baseUrl)?o.default.join(e.inputDir,s.baseUrl||"."):s.baseUrl||".",n=[".ts",".js",".json",".node"],a=createMatchPath(r,s.paths||{})
+;return e=>function visitSourceFile(e,t,i,s,r,n){
+const a=e,{isExportDeclaration:c,isImportDeclaration:l,visitEachChild:p,visitNode:d}=n
+;return d(a,(e=>visitNodeAndChildren(e)));function visitNodeAndChildren(e){
+if(null!=e)return c(e)||l(e)?function visitImportExportNode(e){
+return!e.moduleSpecifier||function isImportExportSpecifierRelative(e){
+return!(!e.moduleSpecifier||!e.moduleSpecifier.getSourceFile())&&isPathRelative(getModuleSpecifierValue(e.moduleSpecifier))
+}(e)?e:function relativizeImportExportNode(e,i){if(!e.moduleSpecifier||!e.moduleSpecifier.getSourceFile())return e
+;const n=getModuleSpecifierValue(e.moduleSpecifier),a=s(n,void 0,void 0,r);if(!a)return e
+;const p=o.default.relative(i,a).replace(/\\/g,"/"),d=isPathRelative(p)?p:`./${p}`
+;return l(e)?t.factory.updateImportDeclaration(e,e.decorators,e.modifiers,e.importClause,t.factory.createStringLiteral(d)):c(e)?t.factory.updateExportDeclaration(e,e.decorators,e.modifiers,e.isTypeOnly,e.exportClause,t.factory.createStringLiteral(d)):e
+}(e,o.default.dirname(a.fileName))}(e):p(e,(e=>visitNodeAndChildren(e)),t)}function getModuleSpecifierValue(e){
+return e.getText().substr(e.getLeadingTriviaWidth(),e.getWidth()-2*e.getLeadingTriviaWidth())}
+function isPathRelative(e){return e.startsWith("./")||e.startsWith("../")}}(e,i,0,a,n,t)}}
+const shouldAddCurrentWorkingDirectoryPath=e=>{if(!e)return!0;const t="/"===e[0],i=new RegExp("^[A-Z]:/").test(e)
+;return!(t||i)};class TypeScriptProgramWatcher{constructor(i,s){this.tsc=i;const r={getCanonicalFileName:e=>e,
+getCurrentDirectory:i.sys.getCurrentDirectory,getNewLine:()=>i.sys.newLine
+},n=i.createEmitAndSemanticDiagnosticsBuilderProgram;let o=0
+;const c=this.hostOfConfigFile=i.createWatchCompilerHost(s.configFile,{noEmit:!1,newLine:i.NewLineKind.LineFeed,
+sourceMap:!1,inlineSourceMap:!0,incremental:!0,declaration:!1,declarationMap:!1,tsBuildInfoFile:s.cacheFile
+},s.sys,n,(e=>{o++,console.error("\r\n"+i.formatDiagnosticsWithColorAndContext([e],r))}),(e=>{
+if(6031===e.code&&console.log(),6032===e.code&&s.stop(),6193===e.code||6194===e.code){let e=o;if(o=0,e){
+const t=e>1?`${e} errors`:"1 error";s.options.ignoreErrors?(s.report("info","(3/3) Building...ignored "+t),
+setTimeout((()=>{s.start()}),5)):(s.report("info","(3/3) Building...found "+t),setTimeout((()=>{
+console.log(a.default.yellow("[ Unregistered ]"),a.default.white("tsmon: modify source code or enter 'rs' to run"))
+}),5))}else s.report("info","(3/3) Building...success"),setTimeout((()=>{s.start()}),5)}})),l=c.watchFile
+;c.watchFile=(e,t,i)=>l(e,((e,i)=>(console.log(a.default.yellow("[ Unregistered ]"),a.default.yellow(`tsmon: file changed: ${e}`)),
+t(e,i))),i);const p=c.createProgram;c.createProgram=(...e)=>{s.report("start","(2/3) Initializing...")
+;const t=Reflect.apply(p,c,e);return s.report("info","(2/3) Initializing...done"),t},c.useCaseSensitiveFileNames=()=>!0
+;const d=c.afterProgramCreate;c.afterProgramCreate=e=>{s.report("start","(3/3) Building...")
+;const t=e.getCompilerOptions();if(t.baseUrl&&t.paths&&Object.keys(t.paths)){const t={};t.before=[PathAliasTransformer({
+inputDir:s.configDir},i)];const r=e.emit;e.emit=function(i,s,n,o,a){return a?((a.before||[]).concat(t.before||[]),
+(a.after||[]).concat(t.after||[]),(a.afterDeclarations||[]).concat(t.afterDeclarations||[]),
+Reflect.apply(r,e,[i,s,n,o,a])):Reflect.apply(r,e,[i,s,n,o,t])}}d(e)};const h=require(c.configFileName)
+;if(Array.isArray(h.watch)&&this.tsc.sys.watchDirectory){const i=e.dirname(c.configFileName);for(const r of h.watch){
+const n=e.join(i,r);t.watch(n,((t,r)=>{if(r){const t=e.join(i,r)
+;console.log(a.default.yellow("[ Unregistered ]"),a.default.yellow(`tsmon: watching folder changed: ${t}`)),s.start()}
+}))}}}watch(){this.tsc.createWatchProgram(this.hostOfConfigFile)}}!function main(){
+const i=PackageFileResolver.FromName("typescript",__dirname)
+;if(!i)return void console.log(a.default.red("ERROR: No typescript runtime found. exiting..."))
+;const s=PackageFileResolver.FromPath(function CurrentFileName(e){const{stackTraceLimit:t}=Error;Error.stackTraceLimit=e
+;const i={stack:""};Error.captureStackTrace(i),Error.stackTraceLimit=t
+;const s=i.stack.split("\n"),r=s[s.length-1],n=r.indexOf("("),o=r.lastIndexOf(")");let a
+;a=n>0&&o>0?r.slice(n+1,o):r.slice(r.indexOf("at")+3);const c=a.lastIndexOf(":"),l=a.lastIndexOf(":",c-1)
+;return a.slice(0,l)}(2));if(!s)return console.log(a.default.red("ERROR: No package.json found. exiting...")),
+process.exit(1);const r=class ModuleLoader{static load(t){const i=t.main;return require(e.resolve(e.dirname(t.path),i))}
+}.load(i),n=process.argv.findIndex((e=>e.endsWith(".ts")))
+;if(-1===n)return console.log(a.default.red("ERROR: No .ts file to run")),process.exit(1)
+;const o=process.argv[n],c=n>2?process.argv.slice(2,n):[],l=process.argv.length>n+1?process.argv.slice(n+1):[];let p
+;if(p=e.isAbsolute(o)?o:e.resolve(process.cwd(),o),
+!t.existsSync(p))return console.log(a.default.red(`ERROR: ${p} not exists`)),process.exit(1)
+;if(!t.statSync(p).isFile())return console.log(a.default.red(`ERROR: ${p} is not a file`)),process.exit(1)
+;const d=class TSConfigResolver{static FromPath(e){const t=FindFileUp(e,"tsconfig.json");if(t)return t.path}
+}.FromPath(p);if(!d)return console.log(a.default.red("ERROR: No tsconfig.json found")),process.exit(1)
+;const h=e.resolve(__dirname,"../lib/node.js")
+;if(!r.sys.fileExists(h))return console.log(a.default.red("ERROR: No typescript runtime found.")),process.exit(1)
+;let u=e.resolve(__dirname,"../lib/reporter.js");r.sys.fileExists(u)||(u=void 0),
+console.log(a.default.yellow("[ Unregistered ]")+a.default.white(` ${s.name} v${s.version}, typescript v${i.version}, node ${process.version}`))
+;const f=new TypeScriptProgram(r,h,u,p,d,c,l);new TypeScriptProgramWatcher(r,f).watch()}();
