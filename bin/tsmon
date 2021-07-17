@@ -25,7 +25,7 @@ this.handler.removeListener("message",childProcessMessageCallback)):console.log(
 })),s.once("exit",(e=>{this.state!==l.Stopped&&(this.initialized=!0,this.state=l.Stopped,this.emit("stopped",e))})),
 s.unref()}get pid(){return this.handler.pid}send(e){this.handler.send(e,(function(t){
 e&&"report"!==e.type&&t&&console.log("Unable to communicate with user application",t,e)}))}cache(e){this.initialized=!0,
-this.send({type:"cache",value:e})}require(e){this.initialized=!0,this.send({type:"require",value:e})}report(e,t){
+this.send({type:"cache",value:e})}require(...e){this.initialized=!0,this.send({type:"require",value:e})}report(e,t){
 this.send({type:"report",value:{method:e,options:t}})}kill(e){return this.initialized=!0,this.state=l.Stopping,
 this.emit("stopping",e),this.handler.kill(e),!0}stop(e="SIGTERM"){this.initialized=!0,this.state=l.Stopping,
 this.emit("stopping",e),this.handler.kill(e)}}class TypeScriptProgram{constructor(t,i,s,r,n,o,a){this.tsc=t,
@@ -33,8 +33,8 @@ this.runtimeFile=i,this.reportFile=s,this.entryFile=r,this.configFile=n,this.exe
 ignoreErrors:!1},this.commands=[],this.status="";const c=o.indexOf("--ignore-error")
 ;if(c>-1&&(this.options.ignoreErrors=!0,o.splice(c,1)),this.configDir=e.dirname(n),
 this.cacheFile=this.entryFile+".tsmon",this.reporter=this.createReporter(),this.thread=this.create(),this.files=new Map,
-this.report("info","(1/3) Using: "+this.configFile),
-!this.tsc.findConfigFile(__dirname,this.tsc.sys.fileExists,"package.json"))throw new Error('Could not find "package.json"')
+this.jsMaps=[".ts"],
+this.report("info","(1/3) Using: "+this.configFile),!this.tsc.findConfigFile(__dirname,this.tsc.sys.fileExists,"package.json"))throw new Error('Could not find "package.json"')
 ;this.sys=Object.assign({},this.tsc.sys,{writeFile:(e,t)=>{const i=e.slice(0,e.length-3)+".ts";this.files.set(i,t),
 this.report("start","(3/3) Building..."+i)}}),this.setupRestartCommand()}setupRestartCommand(){
 process.stdin.setEncoding("utf8"),process.stdin.on("readable",(()=>{let e;for(;null!=(e=process.stdin.read());){
@@ -55,13 +55,13 @@ this.thread&&this.commands.push("stop"),this.status||this.next()}kill(){this.thr
 this.status||this.next()}next(){if(this.status)throw new Error("InvalidStateForNext");if(this.commands.length){
 const e=this.commands.shift();"start"===e?this.starting():"stop"===e?this.stopping():"kill"===e&&this.killing()}}
 starting(){if(this.status)return;if(this.thread&&this.thread.initialized)return;this.status="start"
-;const e=this.thread=this.thread||this.create();for(const t of this.files.entries())e.cache(t);e.require(this.entryFile)
-}stopping(){this.status||(this.thread&&this.thread.initialized?(this.status="stop",this.thread.stop()):this.next())}
-killing(){this.status||(this.thread&&this.thread.initialized?(this.status="kill",
-this.thread.kill("SIGKILL")):this.next())}}function fileExistsSync(e){try{return t.statSync(e).isFile()}catch(e){
-return!1}}function readJsonFromDiskSync(e){if(t.existsSync(e))return require(e)}function removeExtension(e){
-return e.substring(0,e.lastIndexOf("."))||e}function getPrefixLength(e){const t=e.indexOf("*")
-;return e.substr(0,t).length}function getStrippedPath(t){
+;const e=this.thread=this.thread||this.create();for(const t of this.files.entries())e.cache(t)
+;e.require(this.entryFile,[[".js",this.jsMaps]])}stopping(){
+this.status||(this.thread&&this.thread.initialized?(this.status="stop",this.thread.stop()):this.next())}killing(){
+this.status||(this.thread&&this.thread.initialized?(this.status="kill",this.thread.kill("SIGKILL")):this.next())}}
+function fileExistsSync(e){try{return t.statSync(e).isFile()}catch(e){return!1}}function readJsonFromDiskSync(e){
+if(t.existsSync(e))return require(e)}function removeExtension(e){return e.substring(0,e.lastIndexOf("."))||e}
+function getPrefixLength(e){const t=e.indexOf("*");return e.substr(0,t).length}function getStrippedPath(t){
 return"index"===t.type?e.dirname(t.path):"file"===t.type?t.path:"extension"===t.type?removeExtension(t.path):"package"===t.type?t.path:exhaustiveTypeException(t.type)
 }function exhaustiveTypeException(e){throw new Error(`Unknown type ${e}`)}function matchStar(e,t){
 if(t.length<e.length)return;if("*"===e)return t;const i=e.indexOf("*");if(-1===i)return

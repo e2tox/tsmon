@@ -1,6 +1,6 @@
 {
   "name": "tsmon",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "engines": {
     "node": ">=8.5.0",
     "typescript": ">=2 <=4"
