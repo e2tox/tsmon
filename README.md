@@ -1,13 +1,13 @@
 # tsmon
 
-[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://unpkg.com/tsmon@0.7.1/LICENSE)
+[![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://unpkg.com/tsmon/LICENSE)
 
 `tsmon` is a tool that helps develop typescript based applications by automatically transpile and restarting the process when file changes are detected.
 
 ## Installation
 
 ```bash
-npm i -g tsmon
+npm i -g git+ssh://git@github.com/e2tox/tsmon.git
 ```
 
 ## Usage
@@ -20,7 +20,7 @@ tsmon [node arguments] your-app.ts [arguments...]
 
 Reload typescript project with 456 ts files only took 1 sec.
 
-![Super fast reload](https://raw.githubusercontent.com/agentframework/tsmon/master/reload-time.png)
+![Super fast reload](https://raw.githubusercontent.com/e2tox/tsmon/master/reload-time.png)
 
 ## Examples
 
@@ -77,20 +77,20 @@ tsmon --ignore-error index.ts
 - [x] Manual reload with 'rs' command
 - [x] Output changed file name
 - [x] Monitoring additional directories other than code files. ("watch":string[] in tsconfig.json)
-- [x] License under [Anti 996](https://unpkg.com/tsmon@0.8.0/LICENSE)
+- [x] License under [Anti 996](https://unpkg.com/tsmon/LICENSE)
 - [x] Support path alias in tsconfig.json
 - [x] Support source map
 - [x] Add --ignore-error option to ignore type errors
 
 ## License
 
-Copyright 2020 Ling Zhang
+Copyright 2021 Ling Zhang
 
 Licensed under the "Anti 996", License Version 1.0 (Draft) (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    https://unpkg.com/tsmon@0.8.0/LICENSE
+    https://unpkg.com/tsmon/LICENSE
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,

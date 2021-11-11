@@ -1,19 +1,19 @@
 {
   "name": "tsmon",
-  "version": "0.8.2",
+  "version": "0.9.1",
   "engines": {
     "node": ">=8.5.0",
-    "typescript": ">=2 <=4"
+    "typescript": ">=2"
   },
   "bin": {
-    "tsmon": "bin/tsmon"
+    "tsmon": "bin/tsmon.js"
   },
   "description": "Incremental type check, transpile and reload for TypeScript, automatically",
   "author": "Ling Zhang",
   "license": "Anti 996",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/agentframework/tsmon.git"
+    "url": "git+https://github.com/e2tox/tsmon.git"
   },
   "keywords": [
     "typescript",
@@ -21,18 +21,17 @@
     "reload"
   ],
   "files": [
-    "bin",
-    "lib",
     "LICENSE",
     "NOTICE",
     "README.md",
-    "conf",
-    "yarn.lock"
+    "bin",
+    "lib"
   ],
   "dependencies": {
     "chalk": "2.4.2",
     "ora": "4.0.3",
     "semver": "6.3.0",
-    "source-map": "0.6.1"
+    "source-map": "0.6.1",
+    "typescript": "4.4.4"
   }
 }
