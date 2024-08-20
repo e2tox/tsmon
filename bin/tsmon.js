@@ -84,7 +84,7 @@ const t=a.join(a.dirname(s),n);if(i(t))return t}}}function w(t,e){return s=>{
 const i=s.getCompilerOptions(),r=x(i.baseUrl)?a.join(t.inputDir,i.baseUrl||"."):i.baseUrl||".",n=[".ts",".js",".json",".node"],o=$(r,i.paths||{})
 ;return t=>function(t,e,s,i,r,n){
 const o=t,{isExportDeclaration:c,isImportDeclaration:u,visitEachChild:h,visitNode:l}=n,{factory:p}=e
-;return l(o,(t=>f(t))),t;function f(t){return null==t?[]:c(t)||u(t)?function(t){return!t.moduleSpecifier||function(t){
+;return l(o,(t=>f(t)));function f(t){return null==t?[]:c(t)||u(t)?function(t){return!t.moduleSpecifier||function(t){
 return!(!t.moduleSpecifier||!t.moduleSpecifier.getSourceFile())&&g(d(t.moduleSpecifier))}(t)?t:function(t,e){
 if(!t.moduleSpecifier||!t.moduleSpecifier.getSourceFile())return t;const s=d(t.moduleSpecifier),n=i(s,void 0,void 0,r)
 ;if(!n)return t;const o=a.relative(e,n).replace(/\\/g,"/"),h=g(o)?o:`./${o}`
